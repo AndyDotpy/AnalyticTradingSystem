@@ -1,0 +1,39 @@
+import os
+import order as o
+import order_queue as q
+import utilities as u
+
+optionsMap = {
+    "c": lambda: o.OrderUtility.create_order(),
+    "q": lambda: q.QueueUtility.create_queue(),
+    "d": lambda: q.QueueUtility.display_queue_names(),
+    "o": lambda: o.OrderUtility.display_orders(),
+    "v": lambda: u.view_account(),
+    "a": lambda: q.QueueUtility.add_to_queue(),
+    "s": lambda: q.QueueUtility.send_queue(),
+    "i": lambda: u.enter_API_keys(),
+    "e": lambda: u.exit_prog()
+}
+
+
+if __name__ == '__main__':
+    u.load_local_info()
+
+    while True:
+        inp = input(
+            "[c] Create order\n"
+            "[q] Create queue\n"
+            "[d] Display queues\n"
+            "[o] Display orders\n"
+            "[v] View account\n"
+            "[a] Add to a queue\n"
+            "[s] Send queue\n"
+            "[i] Enter API keys\n"
+            "[e] Exit program\n"
+        ).lower()
+
+        if inp in optionsMap:
+            optionsMap[inp]()
+
+        input("Enter to continue: ")
+        os.system(u.cls_msg)
