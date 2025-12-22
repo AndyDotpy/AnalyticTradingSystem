@@ -34,7 +34,6 @@ trading_client: TradingClient | None = None
 # https://docs.python.org/3.10/library/typing.html#typing.TYPE_CHECKING
 all_orders: dict[str, dict[int, "OrderRecord"]] = {}
 all_queues: dict[str, deque["OrderRecord"]] = {}
-all_symbols: set[str] = set() # Need to keep track of all symbols currently trading instead of iterating over all_orders every time
 
 
 def is_no_trading_client() -> bool:
@@ -92,7 +91,6 @@ def save_local_info() -> None:
             obj={
                 "orders": all_orders,
                 "queues": all_queues,
-                "symbols": all_symbols
             },
             file=file
         )
@@ -104,7 +102,7 @@ def load_local_info() -> None:
     Loads all local orders, symbols and queues
     :return:
     """
-    global all_queues, all_orders, all_symbols, API_KEY, SECRET, trading_client
+    global all_queues, all_orders, API_KEY, SECRET, trading_client
 
     try:
         with open(FileNames.QUEUES_ORDERS.value, "rb") as file:
@@ -112,7 +110,6 @@ def load_local_info() -> None:
             info: dict = pickle.load(file)
             all_queues = info["queues"]
             all_orders = info["orders"]
-            all_symbols = info["symbols"]
         print("Loaded previous queues and orders")
     except OSError:
         print("No previous information on orders or queues found to be loaded")
