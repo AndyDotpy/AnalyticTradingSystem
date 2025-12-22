@@ -16,6 +16,9 @@ cls_msg: str = "cls" if os.name == "nt" else "clear"
 
 # File names
 class FileNames(Enum):
+    """
+    Constants for file names so they are not accidentally mistyped
+    """
     QUEUES_ORDERS: Final = "orders_queues.pkl"
     API_KEYS: Final = "api_keys.pkl"
 
@@ -25,7 +28,7 @@ API_KEY: str = ""
 SECRET: str = ""
 
 # Connects to a paper trading endpoint
-trading_client = TradingClient(API_KEY, SECRET, paper=True)
+trading_client: TradingClient | None = None
 
 # Storing orders and queues
 # https://docs.python.org/3.10/library/typing.html#typing.TYPE_CHECKING
@@ -34,7 +37,14 @@ all_queues: dict[str, deque["OrderRecord"]] = {}
 all_symbols: set[str] = set() # Need to keep track of all symbols currently trading instead of iterating over all_orders every time
 
 
-def tryInt(value: Any) -> int | None:
+def is_no_trading_client() -> bool:
+    if trading_client is None:
+        print("Trading client has not been set please set it with \"[i] Enter API keys\"")
+        return True
+    return False
+
+
+def try_int(value: Any) -> int | None:
     """
     Checks if the given value is an int if it is it will return said int else it will return None
     :param value:
@@ -60,6 +70,9 @@ def view_account() -> None:
     Displays our account status
     :return:
     """
+    if is_no_trading_client():
+        return
+
     account: TradeAccount = trading_client.get_account()
     print(f"Current Cash: ${account.cash}")
 
@@ -73,7 +86,7 @@ def save_local_info() -> None:
     Saves all local orders and queues as pickle file called orders_queues.pkl
     :return:
     """
-    with open(FileNames.QUEUES_ORDERS, "wb") as file:
+    with open(FileNames.QUEUES_ORDERS.value, "wb") as file:
         file: BinaryIO
         pickle.dump(
             obj={
@@ -91,10 +104,10 @@ def load_local_info() -> None:
     Loads all local orders, symbols and queues
     :return:
     """
-    global all_queues, all_orders, all_symbols, API_KEY, SECRET
+    global all_queues, all_orders, all_symbols, API_KEY, SECRET, trading_client
 
     try:
-        with open(FileNames.QUEUES_ORDERS, "rb") as file:
+        with open(FileNames.QUEUES_ORDERS.value, "rb") as file:
             file: BinaryIO
             info: dict = pickle.load(file)
             all_queues = info["queues"]
@@ -105,11 +118,13 @@ def load_local_info() -> None:
         print("No previous information on orders or queues found to be loaded")
 
     try:
-        with open(FileNames.API_KEYS, "rb") as file:
+        with open(FileNames.API_KEYS.value, "rb") as file:
             file: BinaryIO
             info: dict = pickle.load(file)
             API_KEY = info["API_KEY"]
             SECRET = info["SECRET"]
+            trading_client = TradingClient(API_KEY, SECRET, paper=True)
+        print("Loaded API Keys")
     except OSError:
         print("No previous API Keys found")
 
@@ -126,16 +141,21 @@ def exit_prog() -> None:
 
 
 def enter_API_keys() -> None:
+    global trading_client, API_KEY, SECRET
     """
     Saves the API keys as a serialized .pkl
     :return:
     """
-    with open(FileNames.API_KEYS, "wb") as file:
+
+    with open(FileNames.API_KEYS.value, "wb") as file:
+        API_KEY = input("Enter API Key Here: ")
+        SECRET = input("Enter Secret Key Here: ")
         pickle.dump(
             obj={
-                "API_KEY": input("Enter API Key Here: "),
-                "SECRET": input("Enter Secret Key Here: ")
+                "API_KEY": API_KEY,
+                "SECRET": SECRET
             },
             file=file
         )
-    print(f"API key and secret key saved to \"{FileNames.API_KEYS}\"")
+        trading_client = TradingClient(API_KEY, SECRET, paper=True)
+    print(f"API key and secret key saved to \"{FileNames.API_KEYS.value}\"")
