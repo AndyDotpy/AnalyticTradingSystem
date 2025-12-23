@@ -1,6 +1,6 @@
 from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
-from utilities import try_int
+from utilities import try_int, yes_or_no
 import utilities as u
 from uuid import uuid4
 
@@ -97,7 +97,33 @@ class OrderUtility:
     @staticmethod
     def remove_order() -> None:
         """
-        TODO: Needs to be implemented...
+        Removed an order based off its symbol and unique id
         :return:
         """
-        pass
+        if len(u.all_orders) == 0:
+            print("There are no orders to be removed...")
+            return
+
+        if yes_or_no(msg="View orders") == "y":
+            OrderUtility.display_orders()
+
+        symbol: str = input("Enter symbol: ")
+        unique_id: int | None = None
+
+        while unique_id is None:
+            unique_id = try_int(input("Enter unique id: "))
+
+        if symbol not in u.all_orders:
+            print("This symbol is not in all_orders")
+            return
+
+        if unique_id not in u.all_orders[symbol]:
+            print(f"Unique ID does not exist for the symbol {symbol}")
+            return
+
+        u.all_orders[symbol].pop(unique_id)
+        print("Removed the order!")
+        if len(u.all_orders[symbol]) == 0:
+            u.all_orders.pop(symbol)
+            print(f"Removed {symbol} from all_orders as no orders with that symbol remained")
+

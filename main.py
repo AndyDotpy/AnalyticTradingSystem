@@ -5,6 +5,7 @@ import utilities as u
 
 optionsMap = {
     "c": lambda: o.OrderUtility.create_order(),
+    "r": lambda: o.OrderUtility.remove_order(),
     "q": lambda: q.QueueUtility.create_queue(),
     "d": lambda: q.QueueUtility.display_queue_names(),
     "o": lambda: o.OrderUtility.display_orders(),
@@ -12,6 +13,7 @@ optionsMap = {
     "a": lambda: q.QueueUtility.add_to_queue(),
     "s": lambda: q.QueueUtility.send_queue(),
     "i": lambda: u.enter_API_keys(),
+    "p": lambda: u.get_paper_trade_data(),
     "e": lambda: u.exit_prog()
 }
 
@@ -22,6 +24,7 @@ if __name__ == '__main__':
     while True:
         inp = input(
             "[c] Create order\n"
+            "[r] Remove order\n"
             "[q] Create queue\n"
             "[d] Display queues\n"
             "[o] Display orders\n"
@@ -29,6 +32,7 @@ if __name__ == '__main__':
             "[a] Add to a queue\n"
             "[s] Send queue\n"
             "[i] Enter API keys\n"
+            "[p] Get paper data\n"
             "[e] Exit program\n"
         ).lower()
 
