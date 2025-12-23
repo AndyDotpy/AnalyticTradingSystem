@@ -227,7 +227,7 @@ def get_paper_trade_data() -> None:
     )
 
     if response.status_code != 200:
-        print(f"Status code is not 400 is is {response.status_code} no paper data has been gathered.")
+        print(f"Status code is not 200 is is {response.status_code} no paper data has been gathered.")
         return
 
     paper_data = response.json()
