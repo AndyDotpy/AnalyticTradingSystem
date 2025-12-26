@@ -14,6 +14,7 @@ optionsMap = {
     "s": lambda: q.QueueUtility.send_queue(),
     "i": lambda: u.enter_API_keys(),
     "p": lambda: u.get_paper_trade_data(),
+    "m": lambda: q.QueueUtility.remove_queue(),
     "e": lambda: u.exit_prog()
 }
 
@@ -33,6 +34,7 @@ if __name__ == '__main__':
             "[s] Send queue\n"
             "[i] Enter API keys\n"
             "[p] Get paper data\n"
+            "[m] Remove queue\n"
             "[e] Exit program\n"
         ).lower()
 

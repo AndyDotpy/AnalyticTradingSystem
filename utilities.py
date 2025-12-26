@@ -38,6 +38,7 @@ trading_client: TradingClient | None = None
 # https://docs.python.org/3.10/library/typing.html#typing.TYPE_CHECKING
 all_orders: dict[str, dict[int, "OrderRecord"]] = {}
 all_queues: dict[str, deque["OrderRecord"]] = {}
+failed_orders: dict[str, deque["OrderRecord"]]  # str key is queue name, then a deque of OrderRecords that failed
 
 # Storing paper data
 paper_data: list[dict[str, Any]] | None = None #  List of all assets, dict for each asset with each info having a string name and could be any type of data
