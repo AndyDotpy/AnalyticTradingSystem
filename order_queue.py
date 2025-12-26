@@ -138,7 +138,7 @@ class QueueUtility:
                     print(
                         str(u.trading_client.submit_order(
                             current_order.market_order
-                        )) + f"\nTimestamp: {(int(time.time()) * 1000) - start_time} milliseconds from start time" +
+                        )) + f"\nTimestamp: {int(time.time() * 1000) - start_time} milliseconds from start time" +
                         seperator,
                         file=log_file
                     )
