@@ -27,6 +27,8 @@ class OrderRecord:
             raise ValueError("The qty when creating an OrderRecord is <= 0!")
 
         self.id: int = int(uuid4())
+        self.failed: bool = False
+        self.exception: Exception | None = None
 
         self.market_order = MarketOrderRequest(
             symbol=symbol,
@@ -41,6 +43,7 @@ class OrderRecord:
             f"Quantity:   {self.market_order.qty}\n"
             f"Action:     {self.market_order.side}\n"
             f"Trade Time: {self.market_order.time_in_force}\n"
+            f"Failed:     {self.failed}\n"
             f"Unique ID:  {self.id}\n"
         )
 

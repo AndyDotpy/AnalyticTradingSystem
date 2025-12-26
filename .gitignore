@@ -2,3 +2,4 @@
 __pycache__/
 .idea
 .save_info
+queue_logs

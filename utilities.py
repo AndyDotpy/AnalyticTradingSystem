@@ -38,11 +38,12 @@ trading_client: TradingClient | None = None
 # https://docs.python.org/3.10/library/typing.html#typing.TYPE_CHECKING
 all_orders: dict[str, dict[int, "OrderRecord"]] = {}
 all_queues: dict[str, deque["OrderRecord"]] = {}
-failed_orders: dict[str, deque["OrderRecord"]]  # str key is queue name, then a deque of OrderRecords that failed
+failed_orders: dict[str, deque["OrderRecord"]] = {}  # str key is queue name, then a deque of OrderRecords that failed
+sending_queue: bool = False  # True if a queue is currently being sent, False if not
 
 # Storing paper data
-paper_data: list[dict[str, Any]] | None = None #  List of all assets, dict for each asset with each info having a string name and could be any type of data
-paper_symbols: dict[str, bool] | None = None #  Dict of all symbols, the key str is symbol name and bool is if its tradable
+paper_data: list[dict[str, Any]] | None = None  # List of all assets, dict for each asset with each info having a string name and could be any type of data
+paper_symbols: dict[str, bool] | None = None  # Dict of all symbols, the key str is symbol name and bool is if its tradable
 
 
 def no_trading_client() -> bool:
@@ -125,6 +126,7 @@ def save_orders_and_queues() -> None:
             obj={
                 "orders": all_orders,
                 "queues": all_queues,
+                "failed": failed_orders
             },
             file=file
         )
@@ -136,7 +138,7 @@ def load_local_info() -> None:
     Loads all local orders, symbols and queues
     :return:
     """
-    global all_queues, all_orders, API_KEY, SECRET, trading_client, paper_data, paper_symbols
+    global all_queues, all_orders, API_KEY, SECRET, trading_client, paper_data, paper_symbols, failed_orders
 
     try:
         with open(FilePaths.QUEUES_ORDERS.value, "rb") as file:
@@ -144,6 +146,7 @@ def load_local_info() -> None:
             info: dict = pickle.load(file)
             all_queues = info["queues"]
             all_orders = info["orders"]
+            failed_orders = info["failed"]
         print("Loaded previous queues and orders")
     except OSError:
         print("No previous information on orders or queues found to be loaded")
