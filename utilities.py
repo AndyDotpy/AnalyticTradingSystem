@@ -259,3 +259,29 @@ def paper_symbol_exists(symbol: str) -> bool:
     """
     return symbol in paper_symbols
 
+def display_paper_data() -> None:
+    """
+    Displays all paper trading assets
+    :return None:
+    """
+    if paper_data is None:
+        print("No paper data loaded")
+        return
+    
+    for asset in paper_data:
+        print(asset)
+    return
+
+def display_paper_symbols() -> None:
+    """
+    Displays all paper trading symbols
+    :return None:
+    """
+    if paper_symbols is None:
+        print("No paper symbols loaded")
+        return
+    
+    for symbol, tradable in paper_symbols.items():
+        print(f"Symbol: {symbol}, Tradable: {tradable}")
+    return
+

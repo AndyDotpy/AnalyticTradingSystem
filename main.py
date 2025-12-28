@@ -2,6 +2,7 @@ import os
 import order as o
 import order_queue as q
 import utilities as u
+import market_data as m
 
 optionsMap = {
     "c": lambda: o.OrderUtility.create_order(),
@@ -15,7 +16,9 @@ optionsMap = {
     "i": lambda: u.enter_API_keys(),
     "p": lambda: u.get_paper_trade_data(),
     "m": lambda: q.QueueUtility.remove_queue(),
-    "e": lambda: u.exit_prog()
+    "e": lambda: u.exit_prog(),
+    "n": lambda: m.display_past_prices('AAPL'),
+    "m": lambda: u.display_paper_symbols(),
 }
 
 
@@ -36,6 +39,8 @@ if __name__ == '__main__':
             "[p] Get paper data\n"
             "[m] Remove queue\n"
             "[e] Exit program\n"
+            "[n] Display past prices\n"
+            "[m] Display paper symbols\n"
         ).lower()
 
         if inp in optionsMap:
