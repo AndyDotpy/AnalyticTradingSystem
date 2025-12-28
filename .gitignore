@@ -3,3 +3,7 @@ __pycache__/
 .idea
 .save_info
 queue_logs
+venv/
+.venv/
+env/
+__pycache__/
