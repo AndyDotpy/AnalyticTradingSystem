@@ -1,5 +1,4 @@
 import os
-
 from cryptography.fernet import Fernet
 import utilities
 
@@ -47,7 +46,7 @@ class EncryptionManager:
             with open(file_path, "rb") as pickle_file:
                 current_bytes: bytes = EncryptionManager.cipher.encrypt(pickle_file.read())
 
-            os.rename()
+            #os.rename()  Continue here
             with open(file_path, "wb") as pickle_file:
                 pickle_file.write(current_bytes)
 
