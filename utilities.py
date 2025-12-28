@@ -7,7 +7,6 @@ from collections import deque
 from enum import Enum
 import requests
 from requests import Response
-from datetime import date
 
 
 if TYPE_CHECKING:
@@ -250,62 +249,6 @@ def get_paper_trade_data() -> None:
         )
 
     print("Got paper data, updated paper_data and paper_symbols!")
-
-def display_paper_data() -> None:
-    """
-    Displays all paper trading assets
-    :return None:
-    """
-    if paper_data is None:
-        print("No paper data loaded")
-        return
-    
-    for asset in paper_data:
-        print(asset)
-    return
-
-def display_paper_symbols() -> None:
-    """
-    Displays all paper trading symbols
-    :return None:
-    """
-    if paper_symbols is None:
-        print("No paper symbols loaded")
-        return
-    
-    for symbol, tradable in paper_symbols.items():
-        print(f"Symbol: {symbol}, Tradable: {tradable}")
-    return
-
-
-def display_past_prices(symbol: str, timeframe: str = '1Min'):
-    """
-    Displays and returns past prices for a given symbol and timeframe. This will help the bot (and us), detemrine which stocks are going up and down. 
-    :params symbol as str: The stock symbol to get past prices for --> Multiple symbols can be passed separated by commasS
-    :params timeframe as str: The price of the stock will be split up into sections of the timeframe (default is '1Min', so each price point is 1 minute apart)
-    """
-
-    response: Response = requests.get(
-        url="https://data.alpaca.markets/v2/stocks/bars",
-        params={
-            "symbols": symbol,
-            "timeframe": timeframe,
-            "start": date.today().isoformat()
-        },
-        headers={
-            "APCA-API-KEY-ID": API_KEY,
-            "APCA-API-SECRET-KEY": SECRET,
-            "accept": "application/json"
-        }
-    )
-
-    if response.status_code != 200:
-        print(f"Status code is not 200 is is {response.status_code} no stock data has been gathered.")
-        return
-
-    stock_info = response.json()
-
-    print(stock_info)
 
 
 def paper_symbol_exists(symbol: str) -> bool:
