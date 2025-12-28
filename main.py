@@ -2,7 +2,9 @@ import os
 import order as o
 import order_queue as q
 import utilities as u
-import market_data as m
+import market_data 
+
+m = market_data.MarketData(use_bot=False)
 
 optionsMap = {
     "c": lambda: o.OrderUtility.create_order(),
@@ -17,7 +19,7 @@ optionsMap = {
     "p": lambda: u.get_paper_trade_data(),
     "m": lambda: q.QueueUtility.remove_queue(),
     "e": lambda: u.exit_prog(),
-    "n": lambda: m.display_past_prices('AAPL'),
+    "n": lambda: m.past_prices(),
     "m": lambda: u.display_paper_symbols(),
 }
 
