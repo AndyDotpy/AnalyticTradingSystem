@@ -4,16 +4,18 @@ import pytz
 from order import OrderRecord
 from utilities import yes_or_no, try_int
 import order as o
-import utilities as u
 import threading
 from collections import deque
 import os
+import globals as g
 
 
 class QueueUtility:
     """
     The static class that holds all helper functions related to queues
     """
+    all_queues: dict[str, deque["OrderRecord"]] = {}
+    sending_queue: bool = False  # True if a queue is currently being sent, False if not
     last_order_time: int = int(time.time() * 1000)  # Time in milliseconds when the last order was sent
 
     @staticmethod
@@ -24,15 +26,15 @@ class QueueUtility:
         :return:
         """
         name = input("Enter name of queue: ")
-        if name in u.all_queues:
+        if name in QueueUtility.all_queues:
             confirm = input("A queue with this name already exists, do you want to overwrite? \"y\" or \"n\"").lower()
             if confirm == "y":
                 print(f"Overwritten {name} with empty deque")
-                u.all_queues[name] = deque()
+                QueueUtility.all_queues[name] = deque()
             else:
                 print("Queue overwriting cancelled")
         else:
-            u.all_queues[name] = deque()
+            QueueUtility.all_queues[name] = deque()
 
     @staticmethod
     def display_queue_names() -> None:
@@ -40,7 +42,7 @@ class QueueUtility:
         Prints all queue names
         :return:
         """
-        for key in u.all_queues:
+        for key in QueueUtility.all_queues:
             print(key)
 
     @staticmethod
@@ -57,12 +59,12 @@ class QueueUtility:
             o.OrderUtility.display_orders()
 
         queue: str = input("Enter queue: ")
-        if queue not in u.all_queues:
+        if queue not in QueueUtility.all_queues:
             print(f"The queue {queue} does not exist")
             return
 
         symbol = input("Enter stock symbol you want to trade: ")
-        if symbol not in u.all_orders:
+        if symbol not in o.OrderUtility.all_orders:
             print(f"You have no orders for {symbol} stock")
             return
 
@@ -73,11 +75,11 @@ class QueueUtility:
                 "failed implying what was entered was not an int"
             )
             return
-        elif order_id not in u.all_orders[symbol]:
+        elif order_id not in o.OrderUtility.all_orders[symbol]:
             print(f"There are no order ids of {order_id} associated with this symbol")
             return
 
-        u.all_queues[queue].append(u.all_orders[symbol][order_id])
+        QueueUtility.all_queues[queue].append(o.OrderUtility.all_orders[symbol][order_id])
         print("Successfully added to queue!")
 
     @staticmethod
@@ -91,11 +93,11 @@ class QueueUtility:
             QueueUtility.display_queue_names()
 
         name = input("Enter name of queue: ")
-        if name in u.all_queues:
+        if name in QueueUtility.all_queues:
             confirm = input("Are you sure you want to send this queue? \"y\" or \"n\"").lower()
             if confirm != "y":
                 return
-            threading.Thread(target=QueueUtility.queue_sender, args=(name, u.all_queues.pop(name))).start()
+            threading.Thread(target=QueueUtility.queue_sender, args=(name, QueueUtility.all_queues.pop(name))).start()
         else:
             print(f"The queue {name} does not exist")
 
@@ -116,7 +118,7 @@ class QueueUtility:
         """
         #  Rate limit information: https://alpaca.markets/support/usage-limit-api-calls
         #  200 requests per minute -> 1.01 request per .30 seconds, delay will be .35 seconds to be safe
-        u.sending_queue = True
+        QueueUtility.sending_queue = True
         start_time: int = int(time.time() * 1000)  # Start time in milliseconds
 
         try:
@@ -136,7 +138,7 @@ class QueueUtility:
                 current_order: OrderRecord = queue.popleft()
                 try:
                     print(
-                        str(u.trading_client.submit_order(
+                        str(g.trading_client.submit_order(
                             current_order.market_order
                         )) + f"\nTimestamp: {int(time.time() * 1000) - start_time} milliseconds from start time" +
                         seperator,
@@ -148,16 +150,16 @@ class QueueUtility:
                     current_order.failed = True
                     current_order.exception = e
 
-                    if queue_name not in u.failed_orders:
-                        u.failed_orders[queue_name] = deque()
+                    if queue_name not in o.OrderUtility.failed_orders:
+                        o.OrderUtility.failed_orders[queue_name] = deque()
                     else:
-                        u.failed_orders[queue_name].append(current_order)
+                        o.OrderUtility.failed_orders[queue_name].append(current_order)
 
                 while int(time.time() * 1000) - QueueUtility.last_order_time < 350:  # 350 millisecond delay
                     time.sleep(0)
                 QueueUtility.last_order_time = int(time.time() * 1000)
             print("\n_____ _____ _____ _____ |End| of log file _____ _____ _____ _____", file=log_file)
-    u.sending_queue = False
+        QueueUtility.sending_queue = False
 
     @staticmethod
     def remove_queue() -> None:
@@ -170,7 +172,7 @@ class QueueUtility:
             QueueUtility.display_queue_names()
 
         queue_name: str = input("Enter Queue Name: ")
-        if queue_name in u.all_queues:
-            print(f"Removed {queue_name} when it had {len(u.all_queues.pop(queue_name))} orders!")
+        if queue_name in QueueUtility.all_queues:
+            print(f"Removed {queue_name} when it had {len(QueueUtility.all_queues.pop(queue_name))} orders!")
         else:
             print(f"{queue_name} is not a valid queue!")

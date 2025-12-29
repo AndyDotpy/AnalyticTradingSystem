@@ -1,10 +1,13 @@
-import utilities as u
+import globals as g
 import requests
 from requests import Response
 import datetime
+from typing import Any
+import utilities as u
+import pickle
 
 
-def display_past_prices(symbol: str, timeframe: str = '1Min', start_int: int = 1) -> dict:
+def display_past_prices(symbol: str = '', timeframe: str = '1Min', start_int: int = 1) -> dict:
     """
     Displays and returns past prices for a given symbol and timeframe. This will help the bot (and us), detemrine which stocks are going up and down. 
     :params symbol as str: The stock symbol to get past prices for --> Multiple symbols can be passed separated by commasS
@@ -24,8 +27,8 @@ def display_past_prices(symbol: str, timeframe: str = '1Min', start_int: int = 1
             "start": str(start_date.date()),
         },
         headers={
-            "APCA-API-KEY-ID": u.API_KEY,
-            "APCA-API-SECRET-KEY": u.SECRET,
+            "APCA-API-KEY-ID": g.API_KEY,
+            "APCA-API-SECRET-KEY": g.SECRET,
             "accept": "application/json"
         }
     )
@@ -52,8 +55,8 @@ def display_current_prices(symbol: str) -> dict:
             "symbols": symbol,
         },
         headers={
-            "APCA-API-KEY-ID": u.API_KEY,
-            "APCA-API-SECRET-KEY": u.SECRET,
+            "APCA-API-KEY-ID": g.API_KEY,
+            "APCA-API-SECRET-KEY": g.SECRET,
             "accept": "application/json"
         }
     )
@@ -75,6 +78,10 @@ def display_current_prices(symbol: str) -> dict:
 
 
 class MarketData:
+    # Storing paper data
+    paper_data: list[dict[str, Any]] | None = None  # List of all assets, dict for each asset with each info having a string name and could be any type of data
+    paper_symbols: dict[str, bool] | None = None  # Dict of all symbols, the key str is symbol name and bool is if its tradable
+
     def __init__(self, use_bot) -> None:
         self.use_bot = use_bot
 
@@ -101,3 +108,72 @@ class MarketData:
             symbol = input("Enter stock symbol: ")
         
         return display_current_prices(symbol)
+
+    def paper_symbol_exists(self, symbol: str) -> bool:
+        """
+        Use to check if symbol exists in paper trading
+        :params symbol as str:
+        :return bool:
+        """
+        return symbol in MarketData.paper_symbols
+
+    def display_paper_data(self) -> None:
+        """
+        Displays all paper trading assets
+        :return None:
+        """
+        if MarketData.paper_data is None:
+            print("No paper data loaded")
+            return
+
+        for asset in MarketData.paper_data:
+            print(asset)
+        return
+
+    def display_paper_symbols(self) -> None:
+        """
+        Displays all paper trading symbols
+        :return None:
+        """
+        if MarketData.paper_symbols is None:
+            print("No paper symbols loaded")
+            return
+
+        for symbol, tradable in MarketData.paper_symbols.items():
+            print(f"Symbol: {symbol}, Tradable: {tradable}")
+        return
+
+    def get_paper_trade_data(self) -> None:
+        """
+        Uses the API_KEY and SECRET key to send an HTTP request to the link below to get a json formatted list of all paper
+        assets then stores them in paper_data and iterates over paper_data to put all the symbols in a dict called
+        paper_symbols whose value is a bool where true is tradable and false isn't.
+        This will also be saved as paper_info.pkl to your computer
+        HTTPS Request Link: https://paper-api.alpaca.markets/v2/assets
+        Documentation: https://docs.alpaca.markets/reference/get-v2-assets-1
+        """
+
+        if u.no_trading_client() is False:
+            return
+
+        response: Response = requests.get(
+            url="https://paper-api.alpaca.markets/v2/assets",
+            headers={
+                "APCA-API-KEY-ID": g.API_KEY,
+                "APCA-API-SECRET-KEY": g.SECRET,
+                "accept": "application/json"
+            }
+        )
+
+        if response.status_code != 200:
+            print(f"Status code is not 200 is is {response.status_code} no paper data has been gathered.")
+            return
+
+        MarketData.paper_data = response.json()
+        MarketData.paper_symbols = {}
+        for asset in MarketData.paper_data:
+            MarketData.paper_symbols[asset["symbol"]] = asset["tradable"]
+
+        print("Got paper data, updated paper_data and paper_symbols!")
+
+
