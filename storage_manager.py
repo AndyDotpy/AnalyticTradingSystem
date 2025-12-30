@@ -1,17 +1,21 @@
 import os
 import pickle
 from cryptography.fernet import Fernet
-from typing import Any, Callable
+from typing import Any, Callable, BinaryIO
 import order as o
 import order_queue as q
 import market_data as m
 import globals as g
+from alpaca.trading.client import TradingClient
 
 
 class EncryptionManager:
+    """
+    Helper static class for FileManager that does encryption related tasks such as setting and storing the encryption
+    information the user enters
+    """
     encryption_key: bytes | None = None
     cipher: Fernet | None = None
-    encrypted: bool = False
 
     @staticmethod
     def set_encryption_info(encoded_str: str) -> None:
@@ -27,6 +31,15 @@ class EncryptionManager:
             print(f"Encryption key failed due to {e}")
 
     @staticmethod
+    def remove_encryption_info() -> None:
+        """
+        Sets all encryption information such as encryption_key and cipher to None
+        :return:
+        """
+        EncryptionManager.encryption_key = None
+        EncryptionManager.cipher = None
+
+    @staticmethod
     def display_encryption_key() -> None:
         """
         Displays encryption key as a base64 encoded string
@@ -34,25 +47,19 @@ class EncryptionManager:
         """
         print(EncryptionManager.encryption_key)
 
-    @staticmethod
-    def new_encryption_key(file_path: str | None = None) -> None:
-        """
-        Decrypts with old decryption key then re encrypts with new encryption key
-        Displays to console if file_path is None else prints to file
-        :param file_path: string representing a file path
-        :return:
-        """
-
 
     @staticmethod
     def encrypt_pickle_data(encrypted_bytes: bytes) -> bytes:
         """
         Takes encrypted bytes and decrypts them with the EncryptionManager.cipher if it is not None else
         return the given bytes
+        Displays error message if applicable
+        Note this is a helper method for FileManager
         :param bytes as encrypted_bytes:
         :return bytes:
         """
         if EncryptionManager.cipher is None:
+            print("Attempted to encrypt data with no cipher, returns given bytes.")
             return encrypted_bytes
         return EncryptionManager.cipher.encrypt(encrypted_bytes)
 
@@ -61,10 +68,13 @@ class EncryptionManager:
     def decrypt_pickle_data(decrypted_bytes: bytes) -> bytes:
         """
         Decrypts the given bytes if EncryptionManager.cipher is not None else returns the given bytes
+        Displays error message if applicable
+        Note this is a helper method for FileManager
         :param bytes as decrypted_bytes:
         :return bytes:
         """
         if EncryptionManager.cipher is None:
+            print("Attempted to decrypt data with no cipher, returns given bytes.")
             return decrypted_bytes
         return EncryptionManager.cipher.decrypt(decrypted_bytes)
 
@@ -74,22 +84,23 @@ class FileManager:
     """
     FileManager is a static class that contains all necessary functions and information for loading and saving data
     if you are looking for encryption go to EncryptionManager. All functions are documented with docstring and type
-    hinting view each function to see what it does. For the two class variables below file_path_to_keys stores the file
+    hinting view each function to see what it does. For the three class variables below file_path_to_keys stores the file
     path to a serialized file that contains information, note when encrypted .enc will be added to the end of the file
     paths when stored on the computer. The value is a tuple of keys that store information as str. The second class
-    variable key_to_setter takes a key as a str that represents some key in a dict loaded in when unserializing a saved
+    variable KEY_TO_SETTER takes a key as a str that represents some key in a dict loaded in when unserializing a saved
     file, then this key is used to get a setter function that sets a variable to the value stored at the unserialized
     saved file dict. For example there is a variable called API_KEY in globals.py one of the saved files to the computer
-    has a dict that contains a key called API_KEY that stores the actual API_KEY so the key_to_setter will get key
+    has a dict that contains a key called API_KEY that stores the actual API_KEY so the KEY_TO_SETTER will get key
     API_KEY then it will return a function where you can pass in a value, and it will set the variable API_KEY in
-    globals.py to that value.
+    globals.py to that value. The KEY_TO_GETTER takes a key as a str same as KEY_TO_SETTER and will return the value
+    that is supposed to be stored in that part of the dict that will be saved to the computer.
     """
-    file_paths_to_keys: dict[str, tuple[str]] = {
+    FILE_PATH_TO_KEYS: dict[str, tuple[str]] = {
         ".save_info/orders_queues.pkl": ("queues", "orders", "failed"),
         ".save_info/api_keys.pkl": ("API_KEY", "SECRET"),
         ".save_info/paper_info.pkl": ("paper_data", "paper_symbols")
     }
-    key_to_setter: dict[str, Callable[[Any], None]] = {
+    KEY_TO_SETTER: dict[str, Callable[[Any], None]] = {
         "queues": lambda new_val: setattr(q.QueueUtility, "all_queues", new_val),
         "orders": lambda new_val: setattr(o.OrderUtility, "all_orders", new_val),
         "failed": lambda new_val: setattr(o.OrderUtility, "failed_orders", new_val),
@@ -97,6 +108,15 @@ class FileManager:
         "SECRET": lambda new_val: setattr(g, "SECRET", new_val),
         "paper_data": lambda new_val: setattr(m.MarketData, "paper_data", new_val),
         "paper_symbols": lambda new_val: setattr(m.MarketData, "paper_symbols", new_val)
+    }
+    KEY_TO_GETTER: dict[str, Callable[[], Any]] = {
+        "queues": lambda: getattr(q.QueueUtility, "all_queues"),
+        "orders": lambda: getattr(o.OrderUtility, "all_orders"),
+        "failed": lambda: getattr(o.OrderUtility, "failed_orders"),
+        "API_KEY": lambda: getattr(g, "API_KEY"),
+        "SECRET": lambda: getattr(g, "SECRET"),
+        "paper_data": lambda: getattr(m.MarketData, "paper_data"),
+        "paper_symbols": lambda: getattr(m.MarketData, "paper_symbols")
     }
 
     @staticmethod
@@ -144,19 +164,20 @@ class FileManager:
         """
         try:
             with open(file_path, "rb") as file:
-                file: bytes
+                file: BinaryIO
+                file_contents: bytes = file.read()
 
                 if FileManager.path_is_encrypted(file_path):
                     if EncryptionManager.cipher is None:
                         print(f"Problem in __info_loader encrypted file detected {file_path} and no encryption key found! {file_path} data cannot and will not be loaded!")
                         return False
-                    file = EncryptionManager.cipher.decrypt(file)
+                    file_contents = EncryptionManager.decrypt_pickle_data(file_contents)
 
-                saved_info: dict = pickle.load(file)
+                saved_info: dict[str, Any] = pickle.loads(file_contents)
 
-                for key in FileManager.file_paths_to_keys[file_path]:
+                for key in FileManager.FILE_PATH_TO_KEYS[FileManager.decrypt_path(file_path)]:
                     key: str
-                    FileManager.key_to_setter[key](saved_info[key])
+                    FileManager.KEY_TO_SETTER[key](saved_info[key])
             return True
         except OSError:
             return False
@@ -168,14 +189,17 @@ class FileManager:
         Uses private helper function __info_loader(str) -> bool
         :return:
         """
-        if EncryptionManager.encrypted and EncryptionManager.encryption_key is None:
-            print("Cannot load any local info because the data is encrypted and no encryption key is given.")
-            return
-
-        for file_path in FileManager.file_paths_to_keys:
+        for file_path in FileManager.FILE_PATH_TO_KEYS:
             if FileManager.__info_loader(FileManager.encrypt_path(file_path)) or FileManager.__info_loader(file_path):
                 continue
             print(f"{file_path} and {file_path}.enc failed to open hence no information can be loaded.")
+
+        if g.API_KEY != "" and g.SECRET != "":
+            g.trading_client = TradingClient(g.API_KEY, g.SECRET, paper=True)
+            print("Set trading client!")
+        else:
+            print("No previous keys obtained trading client not set!")
+        print("Loaded local information.")
 
     @staticmethod
     def save_directory_check() -> bool:
@@ -195,6 +219,46 @@ class FileManager:
             return False
 
     @staticmethod
+    def __info_saver(file_path: str) -> bool:
+        """
+        Returns True if successfully saved serialized and maybe encrypted dict of information else False
+        Will encrypt if the encryption key has been set
+        :param str as file_path:
+        :return bool:
+        """
+        decrypted_path: str = FileManager.decrypt_path(file_path)
+        encrypted_path: str = FileManager.encrypt_path(file_path)
+
+        unsaved_info: dict = {}
+        for key in FileManager.FILE_PATH_TO_KEYS[decrypted_path]:
+            key: str
+            unsaved_info[key] = FileManager.KEY_TO_GETTER[key]()
+
+        unsaved_bytes: bytes = pickle.dumps(unsaved_info)
+
+        encrypted: bool = False
+        if EncryptionManager.cipher is not None:
+            unsaved_bytes = EncryptionManager.encrypt_pickle_data(unsaved_bytes)
+            encrypted = True
+
+        try:
+            with open(encrypted_path if encrypted else decrypted_path, "wb") as file:
+                file.write(unsaved_bytes)
+        except OSError:
+            print(f"Failed to save to file {file_path} when opening the file for writing bytes.")
+            return False
+
+        try:
+            if encrypted:
+                os.remove(decrypted_path)
+            else:
+                os.remove(encrypted_path)
+        except OSError:
+            pass
+
+        return True
+
+    @staticmethod
     def save_orders_and_queues() -> bool:
         """
         Saves orders and queues and encrypts them if there is an encryption key
@@ -203,10 +267,7 @@ class FileManager:
         """
         if FileManager.save_directory_check() is False:
             return False
-
-        # Continue here
-
-        return True
+        return FileManager.__info_saver(".save_info/orders_queues.pkl")
 
     @staticmethod
     def save_API_keys() -> bool:
@@ -216,8 +277,7 @@ class FileManager:
         """
         if FileManager.save_directory_check() is False:
             return False
-
-        return True
+        return FileManager.__info_saver(".save_info/api_keys.pkl")
 
     @staticmethod
     def save_paper_info() -> bool:
@@ -227,8 +287,7 @@ class FileManager:
         """
         if FileManager.save_directory_check() is False:
             return False
-
-        return True
+        return FileManager.__info_saver(".save_info/paper_info.pkl")
 
     @staticmethod
     def save_all() -> bool:
@@ -237,21 +296,13 @@ class FileManager:
         succeeds else returns False
         :return bool:
         """
-        orders_and_queues_result: bool = FileManager.save_orders_and_queues()
-        if orders_and_queues_result is False:
-            print("Failed to save orders and queues")
+        if FileManager.save_directory_check() is False:
+            return False
 
-        api_keys_result: bool = FileManager.save_API_keys()
-        if api_keys_result is False:
-            print("Failed to save API keys")
+        all_success: bool = True
+        for file_path in FileManager.FILE_PATH_TO_KEYS:
+            if FileManager.__info_saver(file_path) is False:
+                print(f"{file_path} failed to save!")
+                all_success = False
 
-        save_paper_result: bool = FileManager.save_paper_info()
-        if save_paper_result is False:
-            print("Failed to save paper information")
-
-        return orders_and_queues_result and api_keys_result and save_paper_result
-
-
-if __name__ == "__main__":
-    EncryptionManager.set_encryption_info(input("Encryption Key: "))
-    EncryptionManager.display_encryption_key()
+        return all_success

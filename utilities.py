@@ -1,16 +1,8 @@
-from typing import Any, BinaryIO, TYPE_CHECKING
+from typing import Any
 from alpaca.trading import Position
-from alpaca.trading.client import TradingClient
-import pickle
-import os
-import requests
-from requests import Response
 import globals as g
 import storage_manager
-
-
-if TYPE_CHECKING:
-    from alpaca.broker import TradeAccount
+from alpaca.broker import TradeAccount
 
 
 def no_trading_client() -> bool:
@@ -63,81 +55,11 @@ def view_account() -> None:
         print(f"{p.symbol}: {p.qty} shares")
 
 
-def save_orders_and_queues() -> None:
-    """
-    Saves all local orders and queues as pickle file called orders_queues.pkl
-    :return:
-    """
-    if save_directory_check() is False:
-        return
-
-    with open(FilePaths.QUEUES_ORDERS.value, "wb") as file:
-        file: BinaryIO
-        pickle.dump(
-            obj={
-                "orders": all_orders,
-                "queues": all_queues,
-                "failed": failed_orders
-            },
-            file=file
-        )
-    print("Saved queues and orders!")
-
-
-    try:
-        with open(FilePaths.API_KEYS.value, "rb") as file:
-            file: BinaryIO
-            info: dict = pickle.load(file)
-            API_KEY = info["API_KEY"]
-            SECRET = info["SECRET"]
-            trading_client = TradingClient(API_KEY, SECRET, paper=True)
-        print("Loaded API Keys")
-    except OSError:
-        print("No previous API Keys found")
-
-    try:
-        with open(FilePaths.PAPER_INFO.value, "rb") as file:
-            file: BinaryIO
-            info: dict = pickle.load(file)
-            paper_data = info["paper_data"]
-            paper_symbols = info["paper_symbols"]
-        print("Loaded paper data and symbols")
-    except OSError:
-        print("No previous paper data found")
-
-
-
 def exit_prog() -> None:
     """
     Exits program and saves local changes
     :return:
     """
-    save_orders_and_queues()
+    storage_manager.FileManager.save_all()
     exit(0)
-
-
-def enter_API_keys() -> None:
-    """
-    Saves the API keys as a serialized .pkl
-    :return:
-    """
-
-    if save_directory_check() is False:
-        return
-
-    with open(FilePaths.API_KEYS.value, "wb") as file:
-        API_KEY = input("Enter API Key Here: ")
-        SECRET = input("Enter Secret Key Here: ")
-        pickle.dump(
-            obj={
-                "API_KEY": API_KEY,
-                "SECRET": SECRET
-            },
-            file=file
-        )
-        trading_client = TradingClient(API_KEY, SECRET, paper=True)
-    print(f"API key and secret key saved to \"{FilePaths.API_KEYS.value}\"")
-
-
-
 

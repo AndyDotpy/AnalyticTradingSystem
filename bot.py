@@ -23,7 +23,7 @@ class Bot:
         """
         if u.no_trading_client():
             raise ValueError("Trading client is not set. Please set API keys before initializing the bot.")
-        if not u.paper_symbol_exists(symbol):
+        if not m.paper_symbol_exists(symbol):
             raise ValueError(f"The symbol {symbol} does not exist, please use a valid symbol.")
         
         self.symbol = symbol

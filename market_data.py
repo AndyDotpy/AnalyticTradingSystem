@@ -4,7 +4,6 @@ from requests import Response
 import datetime
 from typing import Any
 import utilities as u
-import pickle
 
 
 def display_past_prices(symbol: str = '', timeframe: str = '1Min', start_int: int = 1) -> dict:
@@ -127,6 +126,7 @@ class MarketData:
             return
 
         for asset in MarketData.paper_data:
+            # I needed to type hint each asset better so we know what it is, check documentation later
             print(asset)
         return
 

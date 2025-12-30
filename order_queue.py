@@ -2,7 +2,6 @@ import time
 from datetime import datetime
 import pytz
 from order import OrderRecord
-from utilities import yes_or_no, try_int
 import order as o
 import threading
 from collections import deque
@@ -12,29 +11,29 @@ import globals as g
 
 class QueueUtility:
     """
-    The static class that holds all helper functions related to queues
+    The static class that holds all helper functions and data related to queues
     """
     all_queues: dict[str, deque["OrderRecord"]] = {}
     sending_queue: bool = False  # True if a queue is currently being sent, False if not
     last_order_time: int = int(time.time() * 1000)  # Time in milliseconds when the last order was sent
 
     @staticmethod
-    def create_queue() -> None:
+    def create_queue(name_of_queue: str, overwrite: bool = False) -> None:
         """
-        TODO: Needs default parameters that cause it to skip the user requests for automation
-        Currently waits for user input to make a new queue
+        Creates a queue based off the parameters, makes the name of the queue name_of_queue and if it exists and
+        overwrite is set to True it will be overwritten with an empty queue
+        :param str as name_of_queue:
+        :param bool as overwrite:
         :return:
         """
-        name = input("Enter name of queue: ")
-        if name in QueueUtility.all_queues:
-            confirm = input("A queue with this name already exists, do you want to overwrite? \"y\" or \"n\"").lower()
-            if confirm == "y":
-                print(f"Overwritten {name} with empty deque")
-                QueueUtility.all_queues[name] = deque()
+        if name_of_queue in QueueUtility.all_queues:
+            if overwrite:
+                print(f"Overwritten {name_of_queue} with empty deque")
+                QueueUtility.all_queues[name_of_queue] = deque()
             else:
                 print("Queue overwriting cancelled")
         else:
-            QueueUtility.all_queues[name] = deque()
+            QueueUtility.all_queues[name_of_queue] = deque()
 
     @staticmethod
     def display_queue_names() -> None:
@@ -46,63 +45,40 @@ class QueueUtility:
             print(key)
 
     @staticmethod
-    def add_to_queue() -> None:
+    def add_to_queue(queue_name: str, symbol: str, order_id: int) -> None:
         """
-        TODO: Needs default parameters that cause it to skip the user requests for automation
-        Adds to queue based off of user input
+        Adds an OrderRecord to queue based off of user input
+        :param str as queue_name:
+        :param str as symbol:
+        :param int as order_id:
         :return:
         """
-        if yes_or_no(msg="View queue") == "y":
-            QueueUtility.display_queue_names()
-
-        if yes_or_no(msg="View order") == "y":
-            o.OrderUtility.display_orders()
-
-        queue: str = input("Enter queue: ")
-        if queue not in QueueUtility.all_queues:
-            print(f"The queue {queue} does not exist")
-            return
-
-        symbol = input("Enter stock symbol you want to trade: ")
-        if symbol not in o.OrderUtility.all_orders:
-            print(f"You have no orders for {symbol} stock")
-            return
-
-        order_id: int | None = try_int(input("Enter order id: "))
-        if order_id is None:
-            print(
-                "The unique id is a int, the conversion from string to int "
-                "failed implying what was entered was not an int"
-            )
-            return
-        elif order_id not in o.OrderUtility.all_orders[symbol]:
-            print(f"There are no order ids of {order_id} associated with this symbol")
-            return
-
-        QueueUtility.all_queues[queue].append(o.OrderUtility.all_orders[symbol][order_id])
+        QueueUtility.all_queues[queue_name].append(o.OrderUtility.all_orders[symbol][order_id])
         print("Successfully added to queue!")
 
     @staticmethod
-    def send_queue() -> None:
+    def send_queue(queue_name: str) -> None:
         """
-        TODO: Needs default parameters that cause it to skip the user requests for automation
-        Asks the user for the queue name, asks for confirmation then starts the queue sending thread
+        Sends a queue based off the queue_name and attempts to send everything in the queue
+        Failed orders will be added to OrderUtility.failed_orders
+        :param str as queue_name:
         :return:
         """
-        if yes_or_no(msg="View queues") == "y":
-            QueueUtility.display_queue_names()
+        if queue_name not in QueueUtility.all_queues:
+            print(f"The queue {queue_name} does not exist")
+            return
 
-        name = input("Enter name of queue: ")
-        if name in QueueUtility.all_queues:
-            confirm = input("Are you sure you want to send this queue? \"y\" or \"n\"").lower()
-            if confirm != "y":
-                return
-            threading.Thread(target=QueueUtility.queue_sender, args=(name, QueueUtility.all_queues.pop(name))).start()
-        else:
-            print(f"The queue {name} does not exist")
+        if QueueUtility.sending_queue:
+            print("Already sending a queue")
+            return
+
+        threading.Thread(
+            target=QueueUtility.__queue_sender,
+            args=(queue_name, QueueUtility.all_queues.pop(queue_name))
+        ).start()
 
     @staticmethod
-    def queue_sender(queue_name: str, queue: deque[OrderRecord]) -> None:
+    def __queue_sender(queue_name: str, queue: deque[OrderRecord]) -> None:
         """
         Parameters are the name of the queue as queue_name and the actual queue as a deque[OrderRecord]
         Returns nothing
@@ -126,7 +102,7 @@ class QueueUtility:
         except FileExistsError:
             pass
         except FileNotFoundError:
-            print(f"Problem creating the log directory the queue {queue_name} queue_sender returning.")
+            print(f"Problem creating the log directory the queue {queue_name} __queue_sender returning.")
             return
 
         with open(f"queue_logs/{queue_name} at {datetime.now(pytz.timezone('EST')).date()}", "w") as log_file:
@@ -162,16 +138,12 @@ class QueueUtility:
         QueueUtility.sending_queue = False
 
     @staticmethod
-    def remove_queue() -> None:
+    def remove_queue(queue_name: str) -> None:
         """
         Removes a queue of orders based on the name and prints the queue name removed and number of orders it has
         if no queue name exists will print so
         :return:
         """
-        if yes_or_no(msg="Display queue names?") == "y":
-            QueueUtility.display_queue_names()
-
-        queue_name: str = input("Enter Queue Name: ")
         if queue_name in QueueUtility.all_queues:
             print(f"Removed {queue_name} when it had {len(QueueUtility.all_queues.pop(queue_name))} orders!")
         else:

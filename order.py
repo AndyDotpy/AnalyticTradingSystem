@@ -1,6 +1,5 @@
 from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
-from utilities import try_int, yes_or_no
 from uuid import uuid4
 from collections import deque
 
@@ -27,7 +26,7 @@ class OrderRecord:
             raise ValueError("The qty when creating an OrderRecord is <= 0!")
 
         self.id: int = int(uuid4())
-        self.failed: bool = False
+        self.failed: bool = False  # Not really needed because we can check if self.exception is False, will remove later
         self.exception: Exception | None = None
 
         self.market_order = MarketOrderRequest(
@@ -53,33 +52,26 @@ class OrderUtility:
     failed_orders: dict[str, deque["OrderRecord"]] = {}  # str key is queue name, then a deque of OrderRecords that failed
 
     @staticmethod
-    def create_order() -> None:
+    def create_order(symbol: str, qty: int, side: str | None = None, overwrite: bool = False) -> None:
         """
-        TODO: Needs default parameters that cause it to skip the user requests for automation
-        Creates an order expecting the user input
+        Creates an OrderRecord based of given parameters, if order exists and overwrite is set to True it will be
+        overwritten, qty is the quantity of shares for a stock, side is buy or sell a stock
+        :param str as symbol:
+        :param int as qty:
+        :param str or None as side:
+        :param bool as overwrite:
         :return:
         """
-        symbol = input("Enter the symbol of the stock: ")
-
-        qty: int | None = None
-        while qty is None:
-            qty = try_int(input("Enter quantity: "))
-
-        side: str | None = None
-        while side != "buy" and side != "sell":
-            side = input("Enter \"buy\" or \"sell\": ").lower()
         if side == "buy":
             side = OrderSide.BUY
         else:
             side = OrderSide.SELL
 
-        #id is an int need to take that into consideration....
         new_order = OrderRecord(symbol, qty, side)
         name = new_order.id
         if symbol in OrderUtility.all_orders:
             if name in OrderUtility.all_orders[symbol]:
-                confirm = input("A order with this name already exists, do you want to overwrite? \"y\" or \"n\"").lower()
-                if confirm == "y":
+                if overwrite:
                     print(f"Order stored, overwritten the previous {name} at {symbol}")
                     OrderUtility.all_orders[symbol][name] = new_order
                 else:
@@ -101,32 +93,13 @@ class OrderUtility:
                 print(f"\tOrder ID: {name}\n\t\t{order.market_order}")
 
     @staticmethod
-    def remove_order() -> None:
+    def remove_order(symbol: str, unique_id: int) -> None:
         """
         Removed an order based off its symbol and unique id
+        :param str as symbol:
+        :param int as unique_id:
         :return:
         """
-        if len(OrderUtility.all_orders) == 0:
-            print("There are no orders to be removed...")
-            return
-
-        if yes_or_no(msg="View orders") == "y":
-            OrderUtility.display_orders()
-
-        symbol: str = input("Enter symbol: ")
-        unique_id: int | None = None
-
-        while unique_id is None:
-            unique_id = try_int(input("Enter unique id: "))
-
-        if symbol not in OrderUtility.all_orders:
-            print("This symbol is not in all_orders")
-            return
-
-        if unique_id not in OrderUtility.all_orders[symbol]:
-            print(f"Unique ID does not exist for the symbol {symbol}")
-            return
-
         OrderUtility.all_orders[symbol].pop(unique_id)
         print("Removed the order!")
         if len(OrderUtility.all_orders[symbol]) == 0:
