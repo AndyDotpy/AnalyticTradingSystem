@@ -12,6 +12,9 @@ n dates and if the current price is above the moving average we buy, if its belo
 
 import market_data
 import utilities as u
+import order as o
+import order_queue as q
+from datetime import datetime
 
 m = market_data.MarketData(use_bot=True)
 
@@ -29,16 +32,53 @@ class Bot:
         self.symbol = symbol
 
     def start(self) -> None:
-        pass
+        """
+        Starts the bot to monitor the market and make buy/sell decisions based on the defined strategy.
+        """
+        while True:
+            not_done = True
+            while not_done:
+                if self.isMarketHours():
+                    not_done = self.make_decision()
+                else:
+                    pass
+
 
     def stop(self) -> None:
         pass 
 
     def buy(self) -> None:
-        pass
+        """
+        Places order to buy a single stock 
+        """
+        self.place_order(1, "buy")
     
     def sell(self) -> None:
-        pass
+        """
+        Places order to sell a single stock
+        """
+        self.place_order(1, "sell")
+
+    def place_order(self, qty: int, side: str) -> None:
+        """
+        NOTE: We will assume that only one queue will be sent at a time, and it will be sent instantly
+        """
+        
+        order_id = o.OrderUtility.create_order(self.symbol, qty, side)
+        q.QueueUtility.create_queue("bot_queue", overwrite=True)
+        q.QueueUtility.add_to_queue("bot_queue", self.symbol, order_id)
+        q.QueueUtility.send_queue("bot_queue")
+
+
+    def isMarketHours(self) -> bool:
+        """
+        Checks if the current time is within market hours (9:30 AM to 4:00 PM, Monday to Friday).
+        """
+        now = datetime.now()
+
+        # Checks if its a weekday, between 9 AM and 4 PM, and not before 9:30 AM
+        return (now.weekday()) < 5 and (now.hour >= 9 and now.hour < 16) and !(now.hour == 9 and now.minute < 30)
+
 
     def analyze_market(self) -> None:
         """
@@ -53,7 +93,7 @@ class Bot:
 
         return past_data, current_data
     
-    def make_decision(self) -> None:
+    def make_decision(self) -> bool:
         """
         This method, will either buy, sell, or do nothing with the stock. 
         NOTE: I will need to also add something that decides how much to buy or sell as well. Need to look into this more.
@@ -75,3 +115,7 @@ class Bot:
             self.buy()
         elif avg_c > current_price:
             self.sell()
+        else:
+            return False
+
+        return True

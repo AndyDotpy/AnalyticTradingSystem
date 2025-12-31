@@ -52,7 +52,7 @@ class OrderUtility:
     failed_orders: dict[str, deque["OrderRecord"]] = {}  # str key is queue name, then a deque of OrderRecords that failed
 
     @staticmethod
-    def create_order(symbol: str, qty: int, side: str | None = None, overwrite: bool = False) -> None:
+    def create_order(symbol: str, qty: int, side: str | None = None, overwrite: bool = False) -> str:
         """
         Creates an OrderRecord based of given parameters, if order exists and overwrite is set to True it will be
         overwritten, qty is the quantity of shares for a stock, side is buy or sell a stock
@@ -60,7 +60,7 @@ class OrderUtility:
         :param int as qty:
         :param str or None as side:
         :param bool as overwrite:
-        :return:
+        :return str as id: 
         """
         if side == "buy":
             side = OrderSide.BUY
@@ -80,6 +80,8 @@ class OrderUtility:
                 OrderUtility.all_orders[symbol][name] = new_order
         else:
             OrderUtility.all_orders[symbol] = {name: new_order}
+        
+        return name
 
     @staticmethod
     def display_orders() -> None:
@@ -105,4 +107,3 @@ class OrderUtility:
         if len(OrderUtility.all_orders[symbol]) == 0:
             OrderUtility.all_orders.pop(symbol)
             print(f"Removed {symbol} from all_orders as no orders with that symbol remained")
-

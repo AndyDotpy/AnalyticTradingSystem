@@ -8,7 +8,6 @@ from alpaca.trading.client import TradingClient
 
 m = market_data.MarketData(use_bot=False)
 
-
 class Options:
     """
     Class representing all the functions that will be callable from the main loop in main.py
