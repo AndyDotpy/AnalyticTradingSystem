@@ -29,6 +29,10 @@ class Bot:
             raise ValueError(f"The symbol {symbol} does not exist, please use a valid symbol.")
         
         self.symbol = symbol
+        self.cash, self.stocks = u.return_account_info()
+
+        # Once we include more symbols, we will not do it this way
+        self.qty = self.stocks[self.symbol]
 
     def start(self) -> None:
         """
@@ -65,6 +69,10 @@ class Bot:
         NOTE: We will assume that only one queue will be sent at a time, and it will be sent instantly
         TODO: Will need to check if the order went through, if there is an error, then that should be dealt with. 
         """
+
+        # We can't sell what we don't have :(
+        if side == "sell" and qty > self.qty:
+            return 
 
         order_id = o.OrderUtility.create_order(self.symbol, qty, side)
         q.QueueUtility.create_queue("bot_queue", overwrite=True)

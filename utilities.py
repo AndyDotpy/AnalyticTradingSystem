@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional, Tuple, List, Dict
 from alpaca.trading import Position
 import globals as g
 import storage_manager
@@ -52,6 +52,24 @@ def view_account() -> None:
     for p in g.trading_client.get_all_positions():
         p: Position
         print(f"{p.symbol}: {p.qty} shares")
+
+def return_account_info() -> Optional[Tuple[float, Dict[str, int]]]:
+    """
+    Returns the total cash and stocks in account. Used for the bot. 
+    :return: A tuple that contains account information: total cash, each stock, and its quantity in a dictionary
+    """
+    if no_trading_client():
+        return
+
+    account: TradeAccount = g.trading_client.get_account()
+    print(f"Current Cash: ${account.cash}")
+
+    symbol_qty : Dict[str, int] = {}
+    for p in g.trading_client.get_all_positions():
+        symbol_qty.append({p.symbol: int(p.qty)})
+    
+    return account.cash, symbol_qty
+
 
 
 def exit_prog() -> None:
