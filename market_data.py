@@ -32,10 +32,6 @@ def display_past_prices(symbol: str = '', timeframe: str = '1Min', start_int: in
         }
     )
 
-    if response.status_code != 200:
-        print(f"Status code is not 200 is is {response.status_code} no stock data has been gathered.")
-        return
-
     stock_info = response.json()
     stock_info = stock_info['bars']
 
@@ -49,7 +45,7 @@ def display_past_prices(symbol: str = '', timeframe: str = '1Min', start_int: in
 
 def display_current_prices(symbol: str) -> dict:
     response: Response = requests.get(
-        url="https://data.alpaca.markets/v2/stocks/bars",
+        url="https://data.alpaca.markets/v2/stocks/bars/latest",
         params={
             "symbols": symbol,
         },
@@ -59,10 +55,6 @@ def display_current_prices(symbol: str) -> dict:
             "accept": "application/json"
         }
     )
-
-    if response.status_code != 200:
-        print(f"Status code is not 200 is is {response.status_code} no stock data has been gathered.")
-        return
 
     info = response.json()
     info = info['bars']
@@ -84,7 +76,7 @@ class MarketData:
     def __init__(self, use_bot) -> None:
         self.use_bot = use_bot
 
-    def past_prices(self, symbol: str = '', timeframe: str = '1Min') -> dict:
+    def past_prices(self, symbol: str = '', timeframe: str = '1Min', start_int: int = 1) -> dict:
         """
         Obtains the past prices of a specified stock for an increment of time.
         NOTE: Eventully the inputs will get replaced with decisions made by the bot, for now keeping it this way so its a lot simpler when we move over to the bot controls. 
@@ -95,7 +87,7 @@ class MarketData:
             symbol = input("Enter stock symbol(s) (separated by commas for multiple): ")
             timeframe = input("Enter timeframe (default is '1Min'): ") or '1Min'
 
-        return display_past_prices(symbol, timeframe)
+        return display_past_prices(symbol, timeframe, start_int)
 
     def current_prices(self, symbol):
         """

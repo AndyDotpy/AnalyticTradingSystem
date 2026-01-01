@@ -15,6 +15,7 @@ import utilities as u
 import order as o
 import order_queue as q
 from datetime import datetime
+import time 
 
 m = market_data.MarketData(use_bot=True)
 
@@ -24,8 +25,6 @@ class Bot:
         Initializes the bot with some specific configurations. 
         :param symbol: The stock symbol that the bot will trade.
         """
-        if u.no_trading_client():
-            raise ValueError("Trading client is not set. Please set API keys before initializing the bot.")
         if not m.paper_symbol_exists(symbol):
             raise ValueError(f"The symbol {symbol} does not exist, please use a valid symbol.")
         
@@ -37,12 +36,12 @@ class Bot:
         """
         while True:
             not_done = True
-            while not_done:
-                if self.isMarketHours():
+            if self.isMarketHours():
+                while not_done:
                     not_done = self.make_decision()
-                else:
-                    pass
-
+                    time.sleep(60)
+            else:
+                time.sleep(60)
 
     def stop(self) -> None:
         pass 
@@ -51,23 +50,28 @@ class Bot:
         """
         Places order to buy a single stock 
         """
+        print("Buy")
         self.place_order(1, "buy")
     
     def sell(self) -> None:
         """
         Places order to sell a single stock
         """
+        print("Sell")
         self.place_order(1, "sell")
 
     def place_order(self, qty: int, side: str) -> None:
         """
         NOTE: We will assume that only one queue will be sent at a time, and it will be sent instantly
+        TODO: Will need to check if the order went through, if there is an error, then that should be dealt with. 
         """
-        
+
         order_id = o.OrderUtility.create_order(self.symbol, qty, side)
         q.QueueUtility.create_queue("bot_queue", overwrite=True)
         q.QueueUtility.add_to_queue("bot_queue", self.symbol, order_id)
         q.QueueUtility.send_queue("bot_queue")
+
+        u.view_account()
 
 
     def isMarketHours(self) -> bool:
@@ -77,7 +81,7 @@ class Bot:
         now = datetime.now()
 
         # Checks if its a weekday, between 9 AM and 4 PM, and not before 9:30 AM
-        return (now.weekday()) < 5 and (now.hour >= 9 and now.hour < 16) and !(now.hour == 9 and now.minute < 30)
+        return (now.weekday()) < 5 and (now.hour >= 9 and now.hour < 16) and not(now.hour == 9 and now.minute < 30)
 
 
     def analyze_market(self) -> None:

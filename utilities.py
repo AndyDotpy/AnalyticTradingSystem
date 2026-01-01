@@ -4,7 +4,6 @@ import globals as g
 import storage_manager
 from alpaca.broker import TradeAccount
 
-
 def no_trading_client() -> bool:
     """
     returns True if the trading_client is none else False
