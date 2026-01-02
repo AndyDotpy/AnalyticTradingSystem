@@ -76,7 +76,7 @@ class Bot:
         if side == "sell" and qty > self.qty:
             return
         else:
-            self.qty -= 1 
+            self.qty -= qty 
 
         order_id = o.OrderUtility.create_order(self.symbol, qty, side)
         q.QueueUtility.create_queue("bot_queue", overwrite=True)
