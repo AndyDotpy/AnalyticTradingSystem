@@ -126,6 +126,6 @@ if __name__ == '__main__':
         new_curr = curr.execute_option(input("Enter option: "))
         if new_curr is not None:
             curr = new_curr
-
-        input("Enter to continue: ")
+        else:
+            input("Enter to continue: ")
         os.system(g.cls_msg)

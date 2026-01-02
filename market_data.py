@@ -56,7 +56,7 @@ def display_current_prices(symbol: str) -> dict:
         }
     )
 
-    info = response.json()
+    info = response.json() # dict[str, dict[str, float]]  TODO Needs fix
     info = info['bars']
 
     with open("current_prices_output.txt", "w") as file:
@@ -106,6 +106,9 @@ class MarketData:
         :params symbol as str:
         :return bool:
         """
+        if MarketData.paper_symbols is None:
+            return False
+
         return symbol in MarketData.paper_symbols
 
     def display_paper_data(self) -> None:

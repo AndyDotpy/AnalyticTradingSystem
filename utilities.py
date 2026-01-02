@@ -64,9 +64,9 @@ def return_account_info() -> Optional[Tuple[float, Dict[str, int]]]:
     account: TradeAccount = g.trading_client.get_account()
     print(f"Current Cash: ${account.cash}")
 
-    symbol_qty : Dict[str, int] = {}
+    symbol_qty: Dict[str, int] = {}
     for p in g.trading_client.get_all_positions():
-        symbol_qty.append({p.symbol: int(p.qty)})
+        symbol_qty[p.symbol] = int(p.qty)
     
     return account.cash, symbol_qty
 
