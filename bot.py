@@ -15,7 +15,8 @@ import utilities as u
 import order as o
 import order_queue as q
 from datetime import datetime
-import time 
+import time
+from typing import Tuple
 
 m = market_data.MarketData(use_bot=True)
 
@@ -40,7 +41,7 @@ class Bot:
         """
         while True:
             not_done = True
-            if self.isMarketHours():
+            if self.is_market_hours():
                 while not_done:
                     not_done = self.make_decision()
                     time.sleep(60)
@@ -82,17 +83,17 @@ class Bot:
         u.view_account()
 
 
-    def isMarketHours(self) -> bool:
+    def is_market_hours(self) -> bool:
         """
         Checks if the current time is within market hours (9:30 AM to 4:00 PM, Monday to Friday).
         """
         now = datetime.now()
 
         # Checks if its a weekday, between 9 AM and 4 PM, and not before 9:30 AM
-        return (now.weekday()) < 5 and (now.hour >= 9 and now.hour < 16) and not(now.hour == 9 and now.minute < 30)
+        return (now.weekday() < 5) and (9 <= now.hour < 16) and not(now.hour == 9 and now.minute < 30)
 
 
-    def analyze_market(self) -> None:
+    def analyze_market(self) -> Tuple[dict[str, float], dict[str, float]]: # TODO Double check the type hinting
         """
         This method analyzes the market data to make buy/sell decisions based on moving average trend following.
         NOTE: I will need to check if the function also contains the data for today as well, as it is supposed to compare the current price.
@@ -104,7 +105,7 @@ class Bot:
             past_data = past_data[:-1]
 
         current_data = m.current_prices(self.symbol)
-        current_data[self.symbol]
+        # current_data[self.symbol] Might have been current_data = current_data[self.symbol]
 
         return past_data, current_data
     
