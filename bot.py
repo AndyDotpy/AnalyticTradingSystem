@@ -57,6 +57,7 @@ class Bot:
         """
         print("Buy")
         self.place_order(1, "buy")
+        self.qty += 1
     
     def sell(self) -> None:
         """
@@ -73,7 +74,9 @@ class Bot:
 
         # We can't sell what we don't have :(
         if side == "sell" and qty > self.qty:
-            return 
+            return
+        else:
+            self.qty -= 1 
 
         order_id = o.OrderUtility.create_order(self.symbol, qty, side)
         q.QueueUtility.create_queue("bot_queue", overwrite=True)
