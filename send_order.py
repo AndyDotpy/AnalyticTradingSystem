@@ -16,4 +16,4 @@ def create_and_send_order(symbol: str, qty: int, side: str):
     q.QueueUtility.add_to_queue("instant_queue", symbol, order_id)
     q.QueueUtility.send_queue("instant_queue")
 
-create_and_send_order("TSLA", 2, "buy")
+create_and_send_order("AAPL", 11, "buy")

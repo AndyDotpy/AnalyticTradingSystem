@@ -30,10 +30,10 @@ class Bot:
             raise ValueError(f"The symbol {symbol} does not exist, please use a valid symbol.")
         
         self.symbol = symbol
-        self.cash, self.stocks = u.return_account_info()
+        self.cash, self.stocks = u.return_account_info()    
 
         # Once we include more symbols, we will not do it this way
-        self.qty = self.stocks[self.symbol]
+        self.qty = self.stocks.get(self.symbol, 0)
 
     def start(self) -> None:
         """
@@ -57,6 +57,7 @@ class Bot:
         """
         print("Buy")
         self.place_order(1, "buy")
+        self.qty += 1
     
     def sell(self) -> None:
         """
@@ -73,7 +74,9 @@ class Bot:
 
         # We can't sell what we don't have :(
         if side == "sell" and qty > self.qty:
-            return 
+            return
+        else:
+            self.qty -= qty 
 
         order_id = o.OrderUtility.create_order(self.symbol, qty, side)
         q.QueueUtility.create_queue("bot_queue", overwrite=True)
@@ -98,8 +101,11 @@ class Bot:
         This method analyzes the market data to make buy/sell decisions based on moving average trend following.
         NOTE: I will need to check if the function also contains the data for today as well, as it is supposed to compare the current price.
         """
-        past_data = m.past_prices(self.symbol, timeframe='1Day', start_int=20)  # This will return the past 20 days of data in incremennts of 1 day.
+        past_data = m.past_prices(self.symbol, timeframe='1Day', start_int=21)  # This will return the past 20 days of data in incremennts of 1 day.
         past_data = past_data[self.symbol]
+        
+        if self.isMarketHours():
+            past_data = past_data[:-1]
 
         current_data = m.current_prices(self.symbol)
         # current_data[self.symbol] Might have been current_data = current_data[self.symbol]
@@ -115,6 +121,10 @@ class Bot:
         
         past_data, current_data = self.analyze_market()
 
+        print(past_data)
+        print("\n\n")
+        print(current_data)
+
         closing_prices = [day['c'] for day in past_data]
 
         avg_c = sum(closing_prices) / len(closing_prices)
@@ -122,7 +132,7 @@ class Bot:
 
         """NOTE: I am not sure if its right to use the opening price for the current day. 
         Also, depending on the time, this might actually return data from the previous day, so I have to look into this as well."""
-        current_price = current_data[self.symbol]['o']
+        current_price = current_data[self.symbol]['c']
 
         if avg_c < current_price: 
             self.buy()
