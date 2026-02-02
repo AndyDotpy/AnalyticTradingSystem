@@ -6,6 +6,7 @@ import order as o
 import order_queue as q
 import market_data as m
 import globals as g
+import security_manager as s
 from alpaca.trading.client import TradingClient
 
 
@@ -98,7 +99,10 @@ class FileManager:
     FILE_PATH_TO_KEYS: dict[str, tuple[str]] = {
         ".save_info/orders_queues.pkl": ("queues", "orders", "failed"),
         ".save_info/api_keys.pkl": ("API_KEY", "SECRET"),
-        ".save_info/paper_info.pkl": ("paper_data", "paper_symbols")
+        ".save_info/paper_info.pkl": ("paper_data", "paper_symbols"),
+        ".save_info/security_info.pkl": (
+            "delay", "password", "status", "previous_status", "last_login_attempt", "login_attempts_failed"
+        )
     }
     KEY_TO_SETTER: dict[str, Callable[[Any], None]] = {
         "queues": lambda new_val: setattr(q.QueueUtility, "all_queues", new_val),
@@ -107,7 +111,14 @@ class FileManager:
         "API_KEY": lambda new_val: setattr(g, "API_KEY", new_val),
         "SECRET": lambda new_val: setattr(g, "SECRET", new_val),
         "paper_data": lambda new_val: setattr(m.MarketData, "paper_data", new_val),
-        "paper_symbols": lambda new_val: setattr(m.MarketData, "paper_symbols", new_val)
+        "paper_symbols": lambda new_val: setattr(m.MarketData, "paper_symbols", new_val),
+        "delay": lambda new_val: setattr(s.SecurityManager, "delay", new_val),
+        "password": lambda new_val: setattr(s.SecurityManager, "password", new_val),
+        "status": lambda new_val: setattr(s.SecurityManager, "status", new_val),
+        "previous_status": lambda new_val: setattr(s.SecurityManager, "previous_status", new_val),
+        "last_login_attempt": lambda new_val: setattr(s.SecurityManager, "last_login_attempt", new_val),
+        "login_attempts_failed": lambda new_val: setattr(s.SecurityManager, "login_attempts_failed", new_val),
+
     }
     KEY_TO_GETTER: dict[str, Callable[[], Any]] = {
         "queues": lambda: getattr(q.QueueUtility, "all_queues"),
@@ -116,7 +127,13 @@ class FileManager:
         "API_KEY": lambda: getattr(g, "API_KEY"),
         "SECRET": lambda: getattr(g, "SECRET"),
         "paper_data": lambda: getattr(m.MarketData, "paper_data"),
-        "paper_symbols": lambda: getattr(m.MarketData, "paper_symbols")
+        "paper_symbols": lambda: getattr(m.MarketData, "paper_symbols"),
+        "delay": lambda: getattr(s.SecurityManager, "delay"),
+        "password": lambda: getattr(s.SecurityManager, "password"),
+        "status": lambda: getattr(s.SecurityManager, "status"),
+        "previous_status": lambda: getattr(s.SecurityManager, "previous_status"),
+        "last_login_attempt": lambda: getattr(s.SecurityManager, "last_login_attempt"),
+        "login_attempts_failed": lambda: getattr(s.SecurityManager, "login_attempts_failed"),
     }
 
     @staticmethod

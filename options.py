@@ -1,6 +1,7 @@
 import order as o
 import order_queue as q
 import storage_manager as sm
+import security_manager as s
 import utilities as u
 import market_data
 import globals as g
@@ -254,6 +255,42 @@ class Options:
         :return:
         """
         sm.FileManager.load_local_info()
+
+    @staticmethod
+    def set_password() -> None:
+        """
+        Sets the given password rejects if invalid
+        :return:
+        """
+        s.SecurityManager.set_password(input("Enter password you want to set: "))
+
+    @staticmethod
+    def generate_password() -> None:
+        """
+        Displays a randomly generated password to the console not guaranteed to be secure
+        :return:
+        """
+        given_length: int | None = None
+        if u.yes_or_no("Would you like to specify the length?") == "y":
+            given_length = u.try_int(input("Enter length: "))
+        print(s.SecurityManager.generate_password(given_length))
+
+    @staticmethod
+    def remove_password() -> None:
+        """
+        Removed password, but before it does so it asks for a confirmation from the user
+        :return:
+        """
+        if u.yes_or_no("Are you sure you want to remove the password?") == "y":
+            s.SecurityManager.remove_password()
+
+    @staticmethod
+    def view_security_info() -> None:
+        print(
+            f"Security Status: {s.SecurityManager.status}\n"
+            f"Previous Status: {s.SecurityManager.previous_status}\n"
+            f"Password: {s.SecurityManager.password}"
+        )
 
     @staticmethod
     def exit_prog() -> None:

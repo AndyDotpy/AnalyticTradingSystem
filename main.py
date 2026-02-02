@@ -3,6 +3,7 @@ import options as o
 import utilities as u
 import globals as g
 import storage_manager
+import security_manager as s
 from typing import Callable
 
 
@@ -46,6 +47,7 @@ root = OptionsNode(
             "[q] View queue options\n"
             "[d] View Data options\n"
             "[c] View Encryption options\n"
+            "[s] View Security options\n"
             "[e] Exit program\n",
     parent=None,
     children=None
@@ -111,6 +113,20 @@ root.children = {
                 "[d] Display encryption key\n",
         parent=root,
         children=None
+    ),
+    "s": OptionsNode(
+        options_map={
+            "g": lambda: o.Options.generate_password(),
+            "s": lambda: o.Options.set_password(),
+            "v": lambda: o.Options.view_security_info(),
+            "r": lambda: o.Options.remove_password(),
+        },
+        display="[g] Generate password\n"
+                "[s] Set password\n"
+                "[v] View security information\n"
+                "[r] Remove password\n",
+        parent=root,
+        children=None
     )
 }
 
@@ -118,6 +134,11 @@ if __name__ == '__main__':
     if u.yes_or_no("Need to enter encryption key?") == "y":
         o.Options.enter_encryption_key()
     storage_manager.FileManager.load_local_info()
+
+    if s.SecurityManager.password is not None:
+        print(f"Login attempts failed: {s.SecurityManager.login_attempts_failed}")
+        if not s.SecurityManager.login(input("Enter Password: ")):
+            exit(0)
 
     curr: OptionsNode = root
     new_curr: OptionsNode | None
