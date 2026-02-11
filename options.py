@@ -3,11 +3,10 @@ import order_queue as q
 import storage_manager as sm
 import security_manager as s
 import utilities as u
-import market_data
+import market_data as m
 import globals as g
 from alpaca.trading.client import TradingClient
 
-m = market_data.MarketData(use_bot=False)
 
 class Options:
     """
@@ -170,12 +169,12 @@ class Options:
         )
 
     @staticmethod
-    def get_paper_data() -> None:
+    def get_paper_symbol_data() -> None:
         """
         Gets paper trading data check the actual get_paper_trade_data() for more details
         :return:
         """
-        m.get_paper_trade_data()
+        m.MarketData.get_paper_symbol_data()
 
     @staticmethod
     def display_paper_symbols() -> None:
@@ -183,7 +182,7 @@ class Options:
         TODO Needs better documentation check MarketData class for more details
         :return:
         """
-        m.display_paper_symbols()
+        m.MarketData.display_paper_symbols()
 
     @staticmethod
     def view_account() -> None:

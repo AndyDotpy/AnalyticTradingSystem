@@ -104,7 +104,8 @@ class SecurityManager:
         :param str as password:
         :return bool:
         """
-        SecurityManager.delay -= SecurityManager.last_login_attempt  # Reduces the delay
+        if SecurityManager.delay is not None:
+            SecurityManager.delay -= SecurityManager.last_login_attempt  # Reduces the delay
         SecurityManager.last_login_attempt = time.time()
 
         if SecurityManager.__delay_login() is True:

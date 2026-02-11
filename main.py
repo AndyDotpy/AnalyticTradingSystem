@@ -87,14 +87,14 @@ root.children = {
     "d": OptionsNode(
         options_map={
             "s": lambda: o.Options.display_paper_symbols(),
-            "d": lambda: o.Options.get_paper_data(),
+            "d": lambda: o.Options.get_paper_symbol_data(),
             "k": lambda: o.Options.enter_API_keys(),
             "a": lambda: o.Options.view_account(),
             "e": lambda: o.Options.save_everything(),
             "r": lambda: o.Options.reload_local_info(),
         },
         display="[s] Display paper symbols\n"
-                "[d] Get paper data\n"
+                "[d] Get paper symbol data\n"
                 "[k] Enter API keys\n"
                 "[a] View account\n"
                 "[e] Save everything\n"
