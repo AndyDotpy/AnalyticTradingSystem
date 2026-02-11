@@ -226,6 +226,10 @@ class Options:
         sm.EncryptionManager.display_encryption_key()
 
     @staticmethod
+    def generate_encryption_key() -> None:
+        print(sm.EncryptionManager.generate_encryption_key())
+
+    @staticmethod
     def save_everything() -> None:
         """
         Attempts to save all the data lets the user know if it does not work

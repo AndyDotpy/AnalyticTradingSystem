@@ -107,10 +107,12 @@ root.children = {
             "e": lambda: o.Options.enter_encryption_key(),
             "r": lambda: o.Options.remove_encryption_key(),
             "d": lambda: o.Options.display_encryption_key(),
+            "g": lambda: o.Options.generate_encryption_key(),
         },
         display="[e] Enter encryption key\n"
                 "[r] Remove encryption key\n"
-                "[d] Display encryption key\n",
+                "[d] Display encryption key\n"
+                "[g] Generate encryption key\n",
         parent=root,
         children=None
     ),

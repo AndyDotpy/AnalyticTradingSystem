@@ -28,7 +28,7 @@ class EncryptionManager:
         try:
             EncryptionManager.encryption_key = encoded_str.encode()
             EncryptionManager.cipher = Fernet(EncryptionManager.encryption_key)
-        except UnicodeEncodeError as e:
+        except (UnicodeEncodeError, ValueError) as e:
             print(f"Encryption key failed due to {e}")
 
     @staticmethod
@@ -48,6 +48,9 @@ class EncryptionManager:
         """
         print(EncryptionManager.encryption_key)
 
+    @staticmethod
+    def generate_encryption_key() -> str:
+        return Fernet.generate_key()
 
     @staticmethod
     def encrypt_pickle_data(encrypted_bytes: bytes) -> bytes:
