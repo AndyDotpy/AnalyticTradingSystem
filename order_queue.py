@@ -15,7 +15,7 @@ class QueueUtility:
     """
     all_queues: dict[str, deque["OrderRecord"]] = {}
     sending_queue: bool = False  # True if a queue is currently being sent, False if not
-    last_order_time: int = int(time.time() * 1000)  # Time in milliseconds when the last order was sent
+    last_order_time: int = time.monotonic()  # Time when the last order was sent
 
     @staticmethod
     def create_queue(name_of_queue: str, overwrite: bool = False) -> None:
@@ -95,7 +95,7 @@ class QueueUtility:
         #  Rate limit information: https://alpaca.markets/support/usage-limit-api-calls
         #  200 requests per minute -> 1.01 request per .30 seconds, delay will be .35 seconds to be safe
         QueueUtility.sending_queue = True
-        start_time: int = int(time.time() * 1000)  # Start time in milliseconds
+        start_time: float = time.monotonic()
 
         try:
             os.mkdir(path="queue_logs")
@@ -116,14 +116,13 @@ class QueueUtility:
                     print(
                         str(g.trading_client.submit_order(
                             current_order.market_order
-                        )) + f"\nTimestamp: {int(time.time() * 1000) - start_time} milliseconds from start time" +
+                        )) + f"\nTimestamp: {time.time() - start_time} milliseconds from start time" +
                         seperator,
                         file=log_file
                     )
                 except Exception as e:  # I could not find the documentation for what exceptions this throws
                     print(f"Failed to send {current_order.id} due to {e}{seperator}", file=log_file)
 
-                    current_order.failed = True
                     current_order.exception = e
 
                     if queue_name not in o.OrderUtility.failed_orders:
@@ -131,9 +130,10 @@ class QueueUtility:
                     else:
                         o.OrderUtility.failed_orders[queue_name].append(current_order)
 
-                while int(time.time() * 1000) - QueueUtility.last_order_time < 350:  # 350 millisecond delay
-                    time.sleep(0)
-                QueueUtility.last_order_time = int(time.time() * 1000)
+                current_time_dif: float = time.monotonic() - QueueUtility.last_order_time
+                if current_time_dif < .35:
+                    time.sleep(0.35 - current_time_dif)
+                QueueUtility.last_order_time = time.monotonic()
             print("\n_____ _____ _____ _____ |End| of log file _____ _____ _____ _____", file=log_file)
         QueueUtility.sending_queue = False
 

@@ -26,7 +26,6 @@ class OrderRecord:
             raise ValueError("The qty when creating an OrderRecord is <= 0!")
 
         self.id: int = int(uuid4())
-        self.failed: bool = False  # Not really needed because we can check if self.exception is False, will remove later
         self.exception: Exception | None = None
 
         self.market_order = MarketOrderRequest(

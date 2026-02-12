@@ -49,7 +49,11 @@ class EncryptionManager:
         print(EncryptionManager.encryption_key)
 
     @staticmethod
-    def generate_encryption_key() -> str:
+    def generate_encryption_key() -> bytes:
+        """
+        Generates an encryption key using Fernet and returns the bytes
+        :return bytes:
+        """
         return Fernet.generate_key()
 
     @staticmethod

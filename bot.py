@@ -1,16 +1,15 @@
-"""
-Let's keep this extremely simple for now. 
 
-Rules:
-1. Bot will only be allowed to buy or sell one symbol. (it can only own a single symbol throughout its lifetime)
-2. Our algorithm for buy-sell will the moving average trend following: basically we check the average of the stock prices at their closing for the past
-n dates and if the current price is above the moving average we buy, if its below we sell. For now, n = 20. 
+#Let's keep this extremely simple for now.
+
+#Rules:
+#1. Bot will only be allowed to buy or sell one symbol. (it can only own a single symbol throughout its lifetime)
+#2. Our algorithm for buy-sell will the moving average trend following: basically we check the average of the stock prices at their closing for the past
+#n dates and if the current price is above the moving average we buy, if its below we sell. For now, n = 20.
 
 
 
-"""
-"""
-import market_data
+
+import market_data as m
 import utilities as u
 import order as o
 import order_queue as q
@@ -18,7 +17,6 @@ from datetime import datetime
 import time
 from typing import Tuple
 
-m = market_data.MarketData(use_bot=True)
 
 class Bot:
     def __init__(self, symbol: str) -> None:
@@ -26,7 +24,7 @@ class Bot:
         # Initializes the bot with some specific configurations. 
         #:param symbol: The stock symbol that the bot will trade.
         
-        if not m.paper_symbol_exists(symbol):
+        if not m.MarketData.paper_symbol_exists(symbol):
             raise ValueError(f"The symbol {symbol} does not exist, please use a valid symbol.")
         
         self.symbol = symbol
@@ -101,13 +99,13 @@ class Bot:
         #This method analyzes the market data to make buy/sell decisions based on moving average trend following.
         #NOTE: I will need to check if the function also contains the data for today as well, as it is supposed to compare the current price.
         
-        past_data = m.past_prices(self.symbol, timeframe='1Day', start_int=21)  # This will return the past 20 days of data in incremennts of 1 day.
+        past_data = m.MarketData.past_prices(self.symbol, timeframe='1Day', start_int=21)  # This will return the past 20 days of data in incremennts of 1 day.
         past_data = past_data[self.symbol]
         
-        if self.isMarketHours():
+        if self.is_market_hours():
             past_data = past_data[:-1]
 
-        current_data = m.current_prices(self.symbol)
+        current_data = m.MarketData.current_prices(self.symbol)
         # current_data[self.symbol] Might have been current_data = current_data[self.symbol]
 
         return past_data, current_data
@@ -142,4 +140,3 @@ class Bot:
             return False
 
         return True
-"""

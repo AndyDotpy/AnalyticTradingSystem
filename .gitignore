@@ -6,4 +6,3 @@ queue_logs
 venv/
 .venv/
 env/
-__pycache__/

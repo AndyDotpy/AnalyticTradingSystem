@@ -4,6 +4,7 @@ from requests import Response
 import datetime
 from typing import Any
 import utilities as u
+import time
 
 
 class MarketData:
@@ -15,11 +16,11 @@ class MarketData:
 
     # Storing paper data
     paper_data: list[dict[str, Any]] | None = None  # List of all assets, dict for each asset with each info having a string name and could be any type of data
-    paper_symbols: dict[str, bool] | None = None  # Dict of all symbols, the key str is symbol name and bool is if its tradable
+    paper_symbol_tradable: dict[str, bool] | None = None  # Dict of all symbols, the key str is symbol name and bool is if its tradable
 
 
     @staticmethod
-    def request_past_prices(symbol: str, timeframe: str = '1Min', days_ago: int = 1, data_points: int = 10000) -> dict[str, list[dict[float | int | str]]] | None:
+    def request_past_prices(symbol: str, timeframe: str = '1Min', days_ago: int = 1, data_points: int | None = 10000) -> dict[str, list[dict[str, float | int | str]]] | None:
         """
         Returns a dictionary that contains keys as stock symbols the user requested with a list of data, this may take
         multiple requests to complete.
@@ -27,7 +28,7 @@ class MarketData:
         :param str as timeframe: The price of the stock will be split up into sections of the timeframe (default is '1Min', so each price point is 1 minute apart)
         :param int as days_ago: The number of days in the past to start gathering data from (default is 1, meaning yesterday)
         :param int as data_points: The maximum number of data points you ask for
-        :return dict[str, list[dict[float | int | str]]]:
+        :return dict[str, list[dict[str, float | int | str]]]:
         Documentation: https://docs.alpaca.markets/reference/stockbars
         """
 
@@ -46,14 +47,18 @@ class MarketData:
             "page_token": use this if next page token is not None
         }
         """
-        response_json: dict[str, dict[str, None | str | list[dict[str, float | int | str]]]] = requests.get(
+        params: dict[str, str | int] = {
+            "symbols": symbol,
+            "timeframe": timeframe,
+            "start": str(start_date.date()),  # YYYY-MM-DD
+        }
+
+        if data_points is not None:
+            params["limit"] = data_points
+
+        response_json: dict[str, None | str | dict[str, list[dict[str, float | int | str]]]] = requests.get(
             url="https://data.alpaca.markets/v2/stocks/bars",
-            params={
-                "symbols": symbol,
-                "timeframe": timeframe,
-                "start": str(start_date.date()),  # YYYY-MM-DD
-                "limit": data_points,
-            },
+            params=params,
             headers=MarketData.REQUEST_HEADERS
         ).json()
 
@@ -85,7 +90,7 @@ class MarketData:
         data_points_collected: int = 0
         if stock_info is not None:
             data_points_collected = sum(len(symbol_list) for symbol_list in stock_info.values())
-            while data_points_collected < data_points and next_page is not None:
+            while (data_points is None or data_points_collected < data_points) and next_page is not None:
                 response_json = requests.get(
                     url="https://data.alpaca.markets/v2/stocks/bars",
                     params={
@@ -109,7 +114,8 @@ class MarketData:
                     pass  # Log unknown error
                 next_page = response_json.get("next_page_token")
 
-        if data_points_collected < data_points:
+
+        if data_points is not None and data_points_collected < data_points:
             pass  # log that not all data points wanted were received
 
 
@@ -147,13 +153,15 @@ class MarketData:
         :params symbol as str:
         :return bool:
         """
-        if MarketData.paper_symbols is None:
+        if MarketData.paper_symbol_tradable is None:
             return False
 
-        return symbol in MarketData.paper_symbols
+        return symbol in MarketData.paper_symbol_tradable
 
     @staticmethod
     def display_paper_data() -> None:
+        #  This method technically serves no purpose as the MarketData.paper_data currently does not store
+        #  any information that is needed
         """
         Displays all paper trading assets
         :return None:
@@ -173,11 +181,11 @@ class MarketData:
         Displays all paper trading symbols
         :return None:
         """
-        if MarketData.paper_symbols is None:
+        if MarketData.paper_symbol_tradable is None:
             print("No paper symbols loaded")
             return
 
-        for symbol, tradable in MarketData.paper_symbols.items():
+        for symbol, tradable in MarketData.paper_symbol_tradable.items():
             print(f"Symbol: {symbol}, Tradable: {tradable}")
         return
 
@@ -186,7 +194,7 @@ class MarketData:
         """
         Uses the API_KEY and SECRET key to send an HTTP request to the link below to get a json formatted list of all paper
         assets then stores them in paper_data and iterates over paper_data to put all the symbols in a dict called
-        paper_symbols whose value is a bool where true is tradable and false isn't.
+        paper_symbol_tradable whose value is a bool where true is tradable and false isn't.
         This will also be saved as paper_info.pkl to your computer
         HTTPS Request Link: https://paper-api.alpaca.markets/v2/assets
         Documentation: https://docs.alpaca.markets/reference/get-v2-assets-1
@@ -197,22 +205,18 @@ class MarketData:
 
         response: Response = requests.get(
             url="https://paper-api.alpaca.markets/v2/assets",
-            headers={
-                "APCA-API-KEY-ID": g.API_KEY,
-                "APCA-API-SECRET-KEY": g.SECRET,
-                "accept": "application/json"
-            }
+            headers=MarketData.REQUEST_HEADERS
         )
 
         if response.status_code != 200:
-            print(f"Status code is not 200 is is {response.status_code} no paper data has been gathered.")
+            print(f"Status code is not 200 is is {response.status_code} no paper symbol data has been gathered.")
             return
 
         MarketData.paper_data = response.json()
 
-        MarketData.paper_symbols = {}
+        MarketData.paper_symbol_tradable = {}
         for asset in MarketData.paper_data:
-            MarketData.paper_symbols[asset["symbol"]] = asset["tradable"]
+            MarketData.paper_symbol_tradable[asset["symbol"]] = asset["tradable"]
 
 
         print("Got paper data, updated paper_data and paper_symbols!")

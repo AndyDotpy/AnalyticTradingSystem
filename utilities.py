@@ -1,8 +1,9 @@
-from typing import Any, Optional, Tuple, List, Dict
+from typing import Any, Optional, Tuple, Dict
 from alpaca.trading import Position
 import globals as g
 import storage_manager
 from alpaca.broker import TradeAccount
+
 
 def no_trading_client() -> bool:
     """
@@ -12,7 +13,7 @@ def no_trading_client() -> bool:
     since trading_client is in the utilities namespace
     """
     if g.trading_client is None:
-        print("Trading client has not been set please set it with \"[i] Enter API keys\"")
+        print("Trading client has not been set please set it!")
         return True
     return False
 
@@ -32,8 +33,8 @@ def try_int(value: Any) -> int | None:
 def yes_or_no(msg: str = "View") -> str:
     """
     Keep in mind this asks for a "y" or "n" response
-    :param msg:
-    :return:
+    :param str as msg:
+    :return str:
     """
     return input(f"{msg} \"y\" or \"n\": ").lower()
 
@@ -52,6 +53,7 @@ def view_account() -> None:
     for p in g.trading_client.get_all_positions():
         p: Position
         print(f"{p.symbol}: {p.qty} shares")
+
 
 def return_account_info() -> Optional[Tuple[float, Dict[str, int]]]:
     """
