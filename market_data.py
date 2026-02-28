@@ -47,6 +47,7 @@ class MarketData:
             "page_token": use this if next page token is not None
         }
         """
+
         params: dict[str, str | int] = {
             "symbols": symbol,
             "timeframe": timeframe,
@@ -56,6 +57,7 @@ class MarketData:
         if data_points is not None:
             params["limit"] = data_points
 
+        last_time: float = time.monotonic()
         response_json: dict[str, None | str | dict[str, list[dict[str, float | int | str]]]] = requests.get(
             url="https://data.alpaca.markets/v2/stocks/bars",
             params=params,
@@ -89,8 +91,11 @@ class MarketData:
 
         data_points_collected: int = 0
         if stock_info is not None:
-            data_points_collected = sum(len(symbol_list) for symbol_list in stock_info.values())
-            while (data_points is None or data_points_collected < data_points) and next_page is not None:
+            if data_points is not None:
+                data_points_collected = sum(len(symbol_list) for symbol_list in stock_info.values())
+            while (data_points is None or data_points_collected < data_points) and next_page:
+                time.sleep(max(0.0, 0.35 - (time.monotonic() - last_time)))
+                last_time = time.monotonic()
                 response_json = requests.get(
                     url="https://data.alpaca.markets/v2/stocks/bars",
                     params={
